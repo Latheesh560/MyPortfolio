@@ -50,10 +50,18 @@
   });
 
   function php_email_form_submit(thisForm, action, formData) {
+    // If the action is a FormSubmit URL, ensure it uses the /ajax/ endpoint for AJAX response
+    if (action.includes('formsubmit.co') && !action.includes('/ajax/')) {
+      action = action.replace('formsubmit.co/', 'formsubmit.co/ajax/');
+    }
+
     fetch(action, {
       method: 'POST',
       body: formData,
-      headers: {'X-Requested-With': 'XMLHttpRequest'}
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
     })
     .then(response => {
       if( response.ok ) {
@@ -64,11 +72,29 @@
     })
     .then(data => {
       thisForm.querySelector('.loading').classList.remove('d-block');
-      if (data.trim() == 'OK') {
-        thisForm.querySelector('.sent-message').classList.add('d-block');
-        thisForm.reset(); 
-      } else {
-        throw new Error(data ? data : 'Form submission failed and no error message returned from: ' + action); 
+      
+      // Try to parse the response as JSON to support AJAX form services like FormSubmit.co
+      try {
+        const json = JSON.parse(data);
+        if (json.success === 'true' || json.success === true) {
+          thisForm.querySelector('.sent-message').classList.add('d-block');
+          thisForm.reset(); 
+        } else {
+          throw new Error(json.message ? json.message : 'Form submission failed');
+        }
+      } catch (e) {
+        // If not a JSON response, fall back to standard text response ('OK' check)
+        if (e instanceof SyntaxError) {
+          if (data.trim() == 'OK') {
+            thisForm.querySelector('.sent-message').classList.add('d-block');
+            thisForm.reset(); 
+          } else {
+            throw new Error(data ? data : 'Form submission failed and no error message returned from: ' + action); 
+          }
+        } else {
+          // If it was another error (e.g. from the throw above), propagate it
+          throw e;
+        }
       }
     })
     .catch((error) => {
