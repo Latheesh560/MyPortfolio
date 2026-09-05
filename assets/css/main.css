@@ -845,9 +845,14 @@ section,
 .portfolio .portfolio-content {
   position: relative;
   overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .portfolio .portfolio-content img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
   transition: 0.3s;
 }
 
